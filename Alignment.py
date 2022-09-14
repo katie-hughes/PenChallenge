@@ -176,10 +176,13 @@ class processing:
                         areas.append(area)
                     except: 
                         pass
-                largest_index = np.argmax(areas)
-                max_centroid = centroids[largest_index]
-                print(f"estimated center: {max_centroid}")
-                circ = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
+                try: 
+                    largest_index = np.argmax(areas)
+                    max_centroid = centroids[largest_index]
+                    print(f"estimated center: {max_centroid}")
+                    drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
+                except: 
+                    print("no contours")
                 
 
                 # Render images:
@@ -189,7 +192,7 @@ class processing:
                 #images = np.hstack((bg_removed, depth_colormap, masked_background))
 
                 cv2.namedWindow(self.title, cv2.WINDOW_NORMAL)
-                cv2.imshow(self.title, circ)
+                cv2.imshow(self.title, drawn_contours)
                 #cv2.imshow(self.title, purple_mask)
                 key = cv2.waitKey(1)
                 # Press esc or 'q' to close the image window
