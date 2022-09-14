@@ -25,8 +25,7 @@ class MoveIt:
                 theta = input("Enter final degree position: ")
                 theta_rad = (np.pi/180.)* float(theta)
                 self.robot.arm.set_single_joint_position("waist", theta_rad)
-    def go(): 
-        
+
 
 m = MoveIt()
 m.interactive()
