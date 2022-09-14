@@ -65,11 +65,16 @@ purple_hue = my_purple_hsv[0][0][0]
 purple_sat = my_purple_hsv[0][0][1]
 purple_val = my_purple_hsv[0][0][2]
 print("PURPLE HUE", purple_hue)
-hue_buff = 10
+hue_buff = 50
 sat_buff = 50
-val_buff = 20
+val_buff = 50
 purple_low = np.array([purple_hue-hue_buff, purple_sat-sat_buff, purple_val-val_buff])
 purple_high = np.array([purple_hue+hue_buff, purple_sat+sat_buff, purple_val+val_buff])
+
+def hue_trackbar(val): 
+    print("hello")
+
+cv2.createTrackbar('Hue', 'HueTitle' , 0, 180, hue_trackbar)
 
 
 # Streaming loop
@@ -110,14 +115,14 @@ try:
 
 
         purple_mask = cv2.inRange(hsv_bg, purple_low, purple_high)
-        print(np.any(purple_mask))
-        #masked_background = hsv_bg & purple_mask
+        print('Is there purple:', np.any(purple_mask))
+        masked_background = cv2.bitwise_and(hsv_bg, hsv_bg, mask=purple_mask)
 
         # Render images:
         #   depth align to color on left
         #   depth on right
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-        images = np.hstack((bg_removed, depth_colormap)) #, masked_background))
+        images = np.hstack((bg_removed, depth_colormap, masked_background))
 
         cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
         cv2.imshow('Align Example', images)
