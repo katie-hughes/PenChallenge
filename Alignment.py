@@ -1,7 +1,10 @@
+from __future__ import print_function
+from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import pyrealsense2 as rs
+import argparse
 
 
 
@@ -53,9 +56,27 @@ clipping_distance = clipping_distance_in_meters / depth_scale
 align_to = rs.stream.color
 align = rs.align(align_to)
 
+
+purple_rgb = [13.7, 9.8, 25.9]
+print('PURPLE RGB:', purple_rgb)
+my_purple_hsv = cv2.cvtColor(np.uint8([[purple_rgb]]), cv2.COLOR_RGB2HSV)
+print("PURPLE HSV: ", my_purple_hsv)
+purple_hue = my_purple_hsv[0][0][0]
+purple_sat = my_purple_hsv[0][0][1]
+purple_val = my_purple_hsv[0][0][2]
+print("PURPLE HUE", purple_hue)
+hue_buff = 10
+sat_buff = 50
+val_buff = 20
+purple_low = np.array([purple_hue-hue_buff, purple_sat-sat_buff, purple_val-val_buff])
+purple_high = np.array([purple_hue+hue_buff, purple_sat+sat_buff, purple_val+val_buff])
+
+
 # Streaming loop
 try:
-    while True:
+    ct = 0
+    while True: #ct < 5:
+        ct += 1
         # Get frameset of color and depth
         frames = pipeline.wait_for_frames()
         # frames.get_depth_frame() is a 640x360 depth image
@@ -78,12 +99,25 @@ try:
         grey_color = 153
         depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
         bg_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
+        w = bg_removed.shape[0]
+        h = bg_removed.shape[1]
+
+        # Convert the RGB colors to HSV colors
+        # Hue ranges 0 to 180
+        hsv_bg = cv2.cvtColor(bg_removed, cv2.COLOR_RGB2HSV)
+        hsv_bg = np.array(hsv_bg)
+
+
+
+        purple_mask = cv2.inRange(hsv_bg, purple_low, purple_high)
+        print(np.any(purple_mask))
+        #masked_background = hsv_bg & purple_mask
 
         # Render images:
         #   depth align to color on left
         #   depth on right
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-        images = np.hstack((bg_removed, depth_colormap))
+        images = np.hstack((bg_removed, depth_colormap)) #, masked_background))
 
         cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
         cv2.imshow('Align Example', images)
