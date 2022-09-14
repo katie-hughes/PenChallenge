@@ -81,14 +81,15 @@ class processing:
         self.title = 'Align Example'
 
         cv2.namedWindow(self.title, cv2.WINDOW_NORMAL)
-
+        """
         cv2.createTrackbar('Hue', self.title , 0, 180, self.hue_trackbar)
         cv2.createTrackbar('HueBuff', self.title , 0, 180, self.hue_buff_trackbar)
         cv2.createTrackbar('Sat', self.title , 0, 180, self.sat_trackbar)
         cv2.createTrackbar('SatBuff', self.title , 0, 180, self.sat_buff_trackbar)
         cv2.createTrackbar('Val', self.title , 0, 255, self.val_trackbar)
         cv2.createTrackbar('ValBuff', self.title , 0, 255, self.val_buff_trackbar)
-    
+        """
+
     def hue_trackbar(self,val): 
         self.purple[0][0][0] = val
         self.update_purples()
@@ -121,7 +122,7 @@ class processing:
         # Streaming loop
         try:
             ct = 0
-            while True: #ct < 5:
+            while True: ##ct < 3:
                 ct += 1
                 # Get frameset of color and depth
                 frames = self.pipeline.wait_for_frames()
@@ -156,17 +157,40 @@ class processing:
 
 
                 purple_mask = cv2.inRange(hsv_bg, self.purple_low, self.purple_high)
-                print('Is there purple:', np.any(purple_mask))
+                #print('Is there purple:', np.any(purple_mask))
                 masked_background = cv2.bitwise_and(hsv_bg, hsv_bg, mask=purple_mask)
+
+
+                contours, hierarchy = cv2.findContours(purple_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                drawn_contours = cv2.drawContours(bg_removed, contours, -1, (0,255,0), 3)
+                centroids = []
+                areas = []
+                for c in contours: 
+                    M = cv2.moments(c)
+                    area = cv2.contourArea(c)
+                    try: 
+                        cx = int(M['m10']/M['m00'])
+                        cy = int(M['m01']/M['m00'])
+                        centroid = (cx,cy)
+                        centroids.append(centroid)
+                        areas.append(area)
+                    except: 
+                        pass
+                largest_index = np.argmax(areas)
+                max_centroid = centroids[largest_index]
+                print(f"estimated center: {max_centroid}")
+                circ = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
+                
 
                 # Render images:
                 #   depth align to color on left
                 #   depth on right
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-                images = np.hstack((bg_removed, depth_colormap, masked_background))
+                #images = np.hstack((bg_removed, depth_colormap, masked_background))
 
                 cv2.namedWindow(self.title, cv2.WINDOW_NORMAL)
-                cv2.imshow(self.title, images)
+                cv2.imshow(self.title, circ)
+                #cv2.imshow(self.title, purple_mask)
                 key = cv2.waitKey(1)
                 # Press esc or 'q' to close the image window
                 if key & 0xFF == ord('q') or key == 27:
