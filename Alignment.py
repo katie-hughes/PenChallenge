@@ -59,11 +59,13 @@ class processing:
         align_to = rs.stream.color
         self.align = rs.align(align_to)
 
-
+        """
         purple_rgb = [23.1, 22.0, 58,4]
         print('PURPLE RGB:', purple_rgb)
         my_purple_hsv = cv2.cvtColor(np.uint8([[purple_rgb]]), cv2.COLOR_RGB2HSV)
         print("PURPLE HSV: ", my_purple_hsv)
+        """
+        my_purple_hsv = np.uint8([[[158, 158, 97]]])
         purple_hue = my_purple_hsv[0][0][0]
         purple_sat = my_purple_hsv[0][0][1]
         purple_val = my_purple_hsv[0][0][2]
@@ -81,23 +83,35 @@ class processing:
         cv2.namedWindow(self.title, cv2.WINDOW_NORMAL)
 
         cv2.createTrackbar('Hue', self.title , 0, 180, self.hue_trackbar)
+        cv2.createTrackbar('HueBuff', self.title , 0, 180, self.hue_buff_trackbar)
         cv2.createTrackbar('Sat', self.title , 0, 180, self.sat_trackbar)
+        cv2.createTrackbar('SatBuff', self.title , 0, 180, self.sat_buff_trackbar)
         cv2.createTrackbar('Val', self.title , 0, 255, self.val_trackbar)
+        cv2.createTrackbar('ValBuff', self.title , 0, 255, self.val_buff_trackbar)
     
     def hue_trackbar(self,val): 
         self.purple[0][0][0] = val
         self.update_purples()
-        cv.imshow(self.title, val)
+
+    def hue_buff_trackbar(self,val): 
+        self.hue_buff = val
+        self.update_purples()
 
     def sat_trackbar(self,val): 
         self.purple[0][0][1] = val
         self.update_purples()
-        cv.imshow(self.title, val)
+
+    def sat_buff_trackbar(self,val): 
+        self.sat_buff = val
+        self.update_purples()
 
     def val_trackbar(self,val): 
         self.purple[0][0][2] = val
         self.update_purples()
-        cv.imshow(self.title, val)
+
+    def val_buff_trackbar(self,val): 
+        self.val_buff = val
+        self.update_purples()
     
     def update_purples(self): 
         self.purple_low = np.array([self.purple[0][0][0]-self.hue_buff, self.purple[0][0][1]-self.sat_buff, self.purple[0][0][2]-self.val_buff])
