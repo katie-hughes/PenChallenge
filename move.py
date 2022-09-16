@@ -2,6 +2,7 @@ from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 import numpy as np
 import modern_robotics as mr
 import time
+import math
 
 class MoveIt:
     def __init__(self): 
@@ -61,11 +62,18 @@ class MoveIt:
     def convert(self, pos): 
         cx = pos[0]
         cz = pos[2]
+        rx = self.dist_x + cx
+        ry = cz - self.dist_y
+        #print("rx, ry", rx, ry)
+        theta = np.arctan(ry / rx)
+        #rad = math.sqrt(rx**2 + ry**2)
+        print("theta", theta)
+        return theta, rad
 
 
 
 
-
+"""
 m = MoveIt()
 #m.interactive()
 
@@ -75,4 +83,9 @@ centroid_pos = [i*depth_scale for i in centroid_pos]
 m.calibrate(centroid_pos)
 #time.sleep(5)
 
+print("CONVERT")
+m.convert(centroid_pos)
+
+
 print("\n\n\n\n")
+"""

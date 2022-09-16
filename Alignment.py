@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import cv2
 import pyrealsense2 as rs
 import argparse
+from move import MoveIt
 
 
 
@@ -50,13 +51,13 @@ class processing:
 
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
         depth_sensor = cfg.get_device().first_depth_sensor()
-        depth_scale = depth_sensor.get_depth_scale()
-        print("Depth Scale is: " , depth_scale)
+        self.depth_scale = depth_sensor.get_depth_scale()
+        print("Depth Scale is: " , self.depth_scale)
 
         # We will be removing the background of objects more than
         #  clipping_distance_in_meters meters away
         clipping_distance_in_meters = 1 #1 meter
-        self.clipping_distance = clipping_distance_in_meters / depth_scale
+        self.clipping_distance = clipping_distance_in_meters / self.depth_scale
 
         # Create an align object
         # rs.align allows us to perform alignment of depth frames to others frames
@@ -94,6 +95,15 @@ class processing:
         cv2.createTrackbar('Val', self.title , purple_val, 255, self.val_trackbar)
         cv2.createTrackbar('ValBuff', self.title , self.val_buff, 255, self.val_buff_trackbar)
         #"""
+        
+
+        # set up mover class
+        print("Importing the mover class")
+        self.mover = MoveIt()
+        start = [63.33274459838867, -6.052464008331299, 250.0]
+        start = [i*self.depth_scale for i in start]
+        self.mover.calibrate(start)
+
 
     def hue_trackbar(self,val): 
         self.purple[0][0][0] = val
@@ -189,7 +199,11 @@ class processing:
                     centroid_depth = depth_image[max_centroid[1]][max_centroid[0]]
                     print(f"depth: {centroid_depth}")
                     point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], centroid_depth)
-                    print(f"deprojected: {point}\n")
+                    print(f"deprojected: {point}")
+                    point = [self.depth_scale*i for i in point]
+                    theta, rad = self.mover.convert(point)
+                    print(f"THETA: {theta}")
+                    print(f"RAD: {rad}\n")
                     #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
                     drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
                 except: 
