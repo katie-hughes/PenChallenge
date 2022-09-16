@@ -6,7 +6,7 @@ import cv2
 import pyrealsense2 as rs
 import argparse
 from move import MoveIt
-
+import time
 
 
 
@@ -100,17 +100,23 @@ class processing:
         # set up mover class
         print("Importing the mover class")
         self.mover = MoveIt()
-        #start = [63.33274459838867, -6.052464008331299, 250.0]
-        #calibrating where the arm is
-        #start = [43.86790084838867, -6.972438335418701, 288.0]
-        start = [51.19697952270508, -6.013332843780518, 287.0]
-
-        start = [i*self.depth_scale for i in start]
-
+        # calibrate where the arm is (this is deprojected coords of pen held in home)
+        # calculated for you if you choose to do a calibration run (below)!
+        start = [0.07904811615173056, -0.041475431693735715, 0.28791090476414244]
         self.mover.home()
         self.mover.open()
         self.mover.calibrate(start)
         # sleep 
+        self.calibration_run = False
+        if self.calibration_run: 
+            print("Calibration run!")
+            print("Prepare for grippers closing")
+            time.sleep(3)
+            self.mover.close()
+
+        # factor for my proportional control 
+        self.alpha = 0.5
+
         
 
 
@@ -145,7 +151,9 @@ class processing:
     def go(self): 
         # Streaming loop
         try:
+            last_theta = 0
             ct = 0
+            coords = []
             while True: ##ct < 3:
                 ct += 1
                 # Get frameset of color and depth
@@ -213,9 +221,22 @@ class processing:
                     rx, ry, theta, rad = self.mover.convert(point)
                     print(f"THETA: {theta}")
                     print(f"RAD: {rad}\n")
-                    self.mover.twist(theta)
-                    print("SET POSE")
-                    self.mover.setpose(rad)
+                    error = last_theta - theta
+                    last_theta = theta
+                    if self.calibration_run: 
+                        coords.append(point)
+                        if ct > 100: 
+                            break
+                    else: 
+                        print(f"ERROR: {error}")
+                        self.mover.twist(theta)
+                        if error < 0.05: 
+                            print("SET POSE")
+                            self.mover.setpose(rad)
+                            self.mover.close()
+                            time.sleep(1)
+                            self.mover.zzz()
+                            exit()
                     #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
                     drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
                 
@@ -234,6 +255,11 @@ class processing:
                 if key & 0xFF == ord('q') or key == 27:
                     cv2.destroyAllWindows()
                     break
+            if self.calibration_run: 
+                coords = np.array(coords)
+                mean = np.mean(coords, axis=0)
+                print(f"USE ME FOR CALIBRATION: {list(mean)}\n\n")
+                self.mover.open()
         finally:
             self.pipeline.stop()
 
