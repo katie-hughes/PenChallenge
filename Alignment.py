@@ -191,7 +191,7 @@ class processing:
                         areas.append(area)
                     except: 
                         pass
-                try: 
+                if len(areas) != 0: 
                     largest_index = np.argmax(areas)
                     max_centroid = centroids[largest_index]
                     print(f"estimated center: {max_centroid}")
@@ -204,10 +204,9 @@ class processing:
                     theta, rad = self.mover.convert(point)
                     print(f"THETA: {theta}")
                     print(f"RAD: {rad}\n")
+                    self.mover.twist(theta)
                     #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
                     drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
-                except: 
-                    print("no contours")
                 
 
                 # Render images:

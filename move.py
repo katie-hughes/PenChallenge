@@ -66,15 +66,21 @@ class MoveIt:
         ry = cz - self.dist_y
         #print("rx, ry", rx, ry)
         theta = np.arctan(ry / rx)
-        #rad = math.sqrt(rx**2 + ry**2)
+        rad = math.sqrt(rx**2 + ry**2)
         print("theta", theta)
         return theta, rad
+    def twist(self, theta): 
+        self.robot.arm.set_single_joint_position("waist", theta)
 
 
 
 
 """
+
 m = MoveIt()
+
+
+
 #m.interactive()
 
 centroid_pos = [63.33274459838867, -6.052464008331299, 250.0]
