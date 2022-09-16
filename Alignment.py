@@ -100,9 +100,18 @@ class processing:
         # set up mover class
         print("Importing the mover class")
         self.mover = MoveIt()
-        start = [63.33274459838867, -6.052464008331299, 250.0]
+        #start = [63.33274459838867, -6.052464008331299, 250.0]
+        #calibrating where the arm is
+        #start = [43.86790084838867, -6.972438335418701, 288.0]
+        start = [51.19697952270508, -6.013332843780518, 287.0]
+
         start = [i*self.depth_scale for i in start]
+
+        self.mover.home()
+        self.mover.open()
         self.mover.calibrate(start)
+        # sleep 
+        
 
 
     def hue_trackbar(self,val): 
@@ -201,10 +210,12 @@ class processing:
                     point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], centroid_depth)
                     print(f"deprojected: {point}")
                     point = [self.depth_scale*i for i in point]
-                    theta, rad = self.mover.convert(point)
+                    rx, ry, theta, rad = self.mover.convert(point)
                     print(f"THETA: {theta}")
                     print(f"RAD: {rad}\n")
                     self.mover.twist(theta)
+                    print("SET POSE")
+                    self.mover.setpose(rad)
                     #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
                     drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
                 

@@ -68,21 +68,32 @@ class MoveIt:
         theta = np.arctan(ry / rx)
         rad = math.sqrt(rx**2 + ry**2)
         print("theta", theta)
-        return theta, rad
+        return rx, ry, theta, rad
     def twist(self, theta): 
         self.robot.arm.set_single_joint_position("waist", theta)
+    def zzz(self):
+        self.robot.arm.go_to_sleep_pose()
+    def home(self):
+        self.robot.arm.go_to_home_pose()
+    def setpose(self, pos): 
+        current = self.get_current_pos()
+        current_r = math.sqrt((current[0]**2)+(current[1]**2))
+        self.robot.arm.set_ee_cartesian_trajectory(x=pos - current_r)
+    def close(self): 
+        self.robot.gripper.grasp()
+    def open(self): 
+        self.robot.gripper.release()
 
 
+
+
+
+
+#m = MoveIt()
+#m.interactive()
 
 
 """
-
-m = MoveIt()
-
-
-
-#m.interactive()
-
 centroid_pos = [63.33274459838867, -6.052464008331299, 250.0]
 depth_scale = 0.001
 centroid_pos = [i*depth_scale for i in centroid_pos]
@@ -92,6 +103,5 @@ m.calibrate(centroid_pos)
 print("CONVERT")
 m.convert(centroid_pos)
 
-
-print("\n\n\n\n")
 """
+print("\n\n\n\n")
