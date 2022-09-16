@@ -41,10 +41,15 @@ class processing:
             self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
         # Start streaming
-        profile = self.pipeline.start(self.config)
+        cfg = self.pipeline.start(self.config)
+
+        profile = cfg.get_stream(rs.stream.color)
+        self.intr = profile.as_video_stream_profile().get_intrinsics()
+        print("INTRINSICS")
+        print(self.intr)
 
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
-        depth_sensor = profile.get_device().first_depth_sensor()
+        depth_sensor = cfg.get_device().first_depth_sensor()
         depth_scale = depth_sensor.get_depth_scale()
         print("Depth Scale is: " , depth_scale)
 
@@ -65,15 +70,15 @@ class processing:
         my_purple_hsv = cv2.cvtColor(np.uint8([[purple_rgb]]), cv2.COLOR_RGB2HSV)
         print("PURPLE HSV: ", my_purple_hsv)
         """
-        my_purple_hsv = np.uint8([[[158, 158, 97]]])
+        my_purple_hsv = np.uint8([[[158, 158, 120]]])
         purple_hue = my_purple_hsv[0][0][0]
         purple_sat = my_purple_hsv[0][0][1]
         purple_val = my_purple_hsv[0][0][2]
         print("PURPLE HUE", purple_hue)
         self.purple = my_purple_hsv
         self.hue_buff = 40
-        self.sat_buff = 50
-        self.val_buff = 50
+        self.sat_buff = 75
+        self.val_buff = 70
         self.purple_low = np.array([purple_hue-self.hue_buff, purple_sat-self.sat_buff, purple_val-self.val_buff])
         self.purple_high = np.array([purple_hue+self.hue_buff, purple_sat+self.sat_buff, purple_val+self.val_buff])
         self.mask = None
@@ -81,14 +86,14 @@ class processing:
         self.title = 'Align Example'
 
         cv2.namedWindow(self.title, cv2.WINDOW_NORMAL)
-        """
-        cv2.createTrackbar('Hue', self.title , 0, 180, self.hue_trackbar)
-        cv2.createTrackbar('HueBuff', self.title , 0, 180, self.hue_buff_trackbar)
-        cv2.createTrackbar('Sat', self.title , 0, 180, self.sat_trackbar)
-        cv2.createTrackbar('SatBuff', self.title , 0, 180, self.sat_buff_trackbar)
-        cv2.createTrackbar('Val', self.title , 0, 255, self.val_trackbar)
-        cv2.createTrackbar('ValBuff', self.title , 0, 255, self.val_buff_trackbar)
-        """
+        #"""
+        cv2.createTrackbar('Hue', self.title , purple_hue, 180, self.hue_trackbar)
+        cv2.createTrackbar('HueBuff', self.title , self.hue_buff, 180, self.hue_buff_trackbar)
+        cv2.createTrackbar('Sat', self.title , purple_sat, 180, self.sat_trackbar)
+        cv2.createTrackbar('SatBuff', self.title , self.sat_buff, 180, self.sat_buff_trackbar)
+        cv2.createTrackbar('Val', self.title , purple_val, 255, self.val_trackbar)
+        cv2.createTrackbar('ValBuff', self.title , self.val_buff, 255, self.val_buff_trackbar)
+        #"""
 
     def hue_trackbar(self,val): 
         self.purple[0][0][0] = val
@@ -162,7 +167,7 @@ class processing:
 
 
                 contours, hierarchy = cv2.findContours(purple_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-                drawn_contours = cv2.drawContours(bg_removed, contours, -1, (0,255,0), 3)
+                drawn_contours = cv2.drawContours(color_image, contours, -1, (0,255,0), 3)
                 centroids = []
                 areas = []
                 for c in contours: 
@@ -180,6 +185,12 @@ class processing:
                     largest_index = np.argmax(areas)
                     max_centroid = centroids[largest_index]
                     print(f"estimated center: {max_centroid}")
+                    print(depth_image.shape)
+                    centroid_depth = depth_image[max_centroid[1]][max_centroid[0]]
+                    print(f"depth: {centroid_depth}")
+                    point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], centroid_depth)
+                    print(f"deprojected: {point}\n")
+                    #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
                     drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
                 except: 
                     print("no contours")
