@@ -15,7 +15,7 @@ class MoveIt:
         self.dist_y = 0
     def interactive(self): 
         while self.mode != 'q': 
-            self.mode = input("[h]ome, [s]leep, [q]uit, [o]pen, [c]lose, [t]wist, [e]nd effector, [p]os: ")
+            self.mode = input("[h]ome, [s]leep, [q]uit, [o]pen, [c]lose, [t]wist, [e]nd effector, [p]os, sho[u]lder, [j]oints, [w]rist: ")
             if self.mode == "h":
                 self.robot.arm.go_to_home_pose()
             elif self.mode == "s":
@@ -36,6 +36,17 @@ class MoveIt:
                 print(matrix)
             elif self.mode == 'p': 
                 print(self.get_current_pos())
+            elif self.mode == 'u':  
+                theta = input("Enter final degree position: ")
+                theta_rad = (np.pi/180.)* float(theta)
+                self.robot.arm.set_single_joint_position("shoulder", theta_rad)
+            elif self.mode == 'w':  
+                theta = input("Enter final degree position: ")
+                theta_rad = (np.pi/180.)* float(theta)
+                self.robot.arm.set_single_joint_position("wrist_angle", theta_rad)
+            elif self.mode == 'j': 
+                joints = self.robot.arm.get_joint_commands()
+                print(joints)
     def get_current_pos(self): 
         joints = self.robot.arm.get_joint_commands()
         T = mr.FKinSpace(self.robot.arm.robot_des.M, self.robot.arm.robot_des.Slist, joints)
@@ -78,11 +89,16 @@ class MoveIt:
     def setpose(self, pos): 
         current = self.get_current_pos()
         current_r = math.sqrt((current[0]**2)+(current[1]**2))
-        self.robot.arm.set_ee_cartesian_trajectory(x=pos - current_r)
+        print(pos, current_r, pos-current_r)
+        self.robot.arm.set_ee_cartesian_trajectory(x=(pos - current_r + 0.02))
     def close(self): 
         self.robot.gripper.grasp()
     def open(self): 
         self.robot.gripper.release()
+    def spin_pos(self): 
+        self.robot.arm.set_joint_positions([0.0, -0.5*math.pi, 0.5*math.pi, 0.0])
+
+
 
 
 

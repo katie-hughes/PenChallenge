@@ -102,7 +102,7 @@ class processing:
         self.mover = MoveIt()
         # calibrate where the arm is (this is deprojected coords of pen held in home)
         # calculated for you if you choose to do a calibration run (below)!
-        start = [0.07904811615173056, -0.041475431693735715, 0.28791090476414244]
+        start = [0.07387535311960851, -0.027243375605950453, 0.3116533614560863]
         self.mover.home()
         self.mover.open()
         self.mover.calibrate(start)
@@ -113,7 +113,8 @@ class processing:
             print("Prepare for grippers closing")
             time.sleep(3)
             self.mover.close()
-
+        
+        self.mover.spin_pos()
         # factor for my proportional control 
         self.alpha = 0.5
 
@@ -152,8 +153,10 @@ class processing:
         # Streaming loop
         try:
             last_theta = 0
+            errors = []
             ct = 0
             coords = []
+            n_consecutive = 50
             while True: ##ct < 3:
                 ct += 1
                 # Get frameset of color and depth
@@ -215,28 +218,37 @@ class processing:
                     print(depth_image.shape)
                     centroid_depth = depth_image[max_centroid[1]][max_centroid[0]]
                     print(f"depth: {centroid_depth}")
-                    point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], centroid_depth)
+                    point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], self.depth_scale*centroid_depth)
                     print(f"deprojected: {point}")
-                    point = [self.depth_scale*i for i in point]
                     rx, ry, theta, rad = self.mover.convert(point)
                     print(f"THETA: {theta}")
-                    print(f"RAD: {rad}\n")
-                    error = last_theta - theta
-                    last_theta = theta
+                    print(f"RAD: {rad}\n") 
                     if self.calibration_run: 
                         coords.append(point)
-                        if ct > 100: 
+                        if ct > 500: 
                             break
                     else: 
-                        print(f"ERROR: {error}")
-                        self.mover.twist(theta)
+                        error = last_theta - theta
+                        last_theta = theta 
                         if error < 0.05: 
-                            print("SET POSE")
-                            self.mover.setpose(rad)
-                            self.mover.close()
-                            time.sleep(1)
-                            self.mover.zzz()
-                            exit()
+                            pass
+                        else: 
+                            self.mover.twist(theta)
+                        errors = [error] + errors
+                        if len(errors) > n_consecutive: 
+                            errors = errors[:n_consecutive]
+                            print(f"ERROR: {error}")
+                            if np.all(np.array(errors) < 0.01): 
+                                print("SET POSE")
+                                self.mover.setpose(rad)
+                                self.mover.close()
+                                time.sleep(1)
+                                self.mover.zzz()
+                                self.mover.open()
+                                self.mover.spin_pos()
+                                errors = []
+                                last_theta = 0
+                                #exit()
                     #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
                     drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
                 
