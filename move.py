@@ -44,27 +44,23 @@ class MoveIt:
         print(f"my pos: {pos}")
         robot_pos = self.get_current_pos()
         print(f"robot pos (m): {robot_pos}")
-        xc = pos[0]
-        xr = robot_pos[0]
-        #this is the distance from the camera to the center of the robot
-        if xc < 0: 
-            if xr > 0: 
-                self.dist_x = xc*-1. + xr
-            else: 
-                self.dist_x = xc*-1.
-        else: 
-            if xr > 0: 
-                self.dist_x = np.abs(xr - xc)
-            else: 
-                self.dist_x = xr*-1. + xc
-        print(f"X distance bewteen camera and robot:{self.dist_x}")
-        cy = pos[2]  # this one will always be positive. 
+        cx = pos[0]
+        rx = robot_pos[0]
+        cz = pos[2]  # this one will always be positive. 
         ry = robot_pos[1]
-        if ry < 0: 
-            self.dist_y = cy + ry*-1.
-        else: 
-            self.dist_y = cy - ry 
-        print(f"Y distance bewteen camera and robot:{self.dist_y}")
+        # distances betewen center of camera to center of robot
+        # THis assumes robot is to the right of the camera
+        self.dist_x = rx - cx
+        self.dist_y = cz - ry 
+        print(f"DIST X: {self.dist_x}")
+        print(f"DIST Y: {self.dist_y}")
+        ## now when I get a distance in the camera frame
+        ## how to convert it to robot frame? 
+        ## basically I want something to add to the x and y coordinates
+        ## to convert it.
+    def convert(self, pos): 
+        cx = pos[0]
+        cz = pos[2]
 
 
 
