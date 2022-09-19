@@ -103,15 +103,8 @@ class processing:
         # set up mover class
         print("Importing the mover class")
         self.mover = MoveIt()
-        # calibrate where the arm is (this is deprojected coords of pen held in home)
-        # calculated for you if you choose to do a calibration run (below)!
-        start = [0.134129620776205, -0.023032093199412386, 0.3023992121933463]
         self.mover.home()
         self.mover.open()
-        time.sleep(1)
-        self.mover.calibrate(start)
-        time.sleep(1)
-        # sleep 
         self.calibration_run = False
         if cal: 
             self.calibration_run = True
@@ -120,9 +113,19 @@ class processing:
             print("Prepare for grippers closing")
             time.sleep(3)
             self.mover.close()
-        else:     
+        else:    
+            # calibrate where the arm is (this is deprojected coords of pen held in home)
+            # calculated for you if you choose to do a calibration run (below)!
+            f = open('cal.txt', 'r')
+            start = []
+            for l in f.readlines(): 
+                start.append(float(l))
+            print(f"Pen Location from Calibration Run: {start}")
+            time.sleep(1)
+            self.mover.calibrate(start)
+            time.sleep(1)
             self.mover.spin_pos()
-        # factor for my proportional control 
+        # factor for my proportional control which I am not using atm
         self.alpha = 0.5
 
         
@@ -161,6 +164,7 @@ class processing:
         try:
             last_theta = 0
             errors = []
+            zs = []
             ct = 0
             coords = []
             n_consecutive = 50
@@ -226,7 +230,7 @@ class processing:
                     print(f"depth: {centroid_depth}")
                     point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], self.depth_scale*centroid_depth)
                     print(f"deprojected: {point}")
-                    rx, ry, theta, rad = self.mover.convert(point)
+                    rx, ry, rz, theta, rad = self.mover.convert(point)
                     print(f"THETA: {theta}")
                     print(f"RAD: {rad}\n") 
                     if self.calibration_run: 
@@ -247,7 +251,7 @@ class processing:
                             print(f"ERROR: {error}")
                             if np.all(np.array(errors) < 0.01): 
                                 print("SET POSE")
-                                self.mover.setpose(rad)
+                                self.mover.setpose(rad,0)
                                 self.mover.close()
                                 time.sleep(1)
                                 self.mover.zzz()
@@ -278,6 +282,10 @@ class processing:
                 coords = np.array(coords)
                 mean = np.mean(coords, axis=0)
                 print(f"USE ME FOR CALIBRATION: {list(mean)}\n\n")
+                f = open('cal.txt', "w")
+                for c in mean: 
+                    f.write(str(c)+'\n')
+                f.close()
                 self.mover.open()
         finally:
             self.pipeline.stop()

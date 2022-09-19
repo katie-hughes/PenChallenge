@@ -13,6 +13,7 @@ class MoveIt:
 
         self.dist_x = 0
         self.dist_y = 0
+        self.dist_z = 0
     def interactive(self): 
         while self.mode != 'q': 
             self.mode = input("[h]ome, [s]leep, [q]uit, [o]pen, [c]lose, [t]wist, [e]nd effector, [p]os, sho[u]lder, [j]oints, [w]rist: ")
@@ -60,34 +61,48 @@ class MoveIt:
         rx = robot_pos[0]
         cz = pos[2]  # this one will always be positive. 
         ry = robot_pos[1]
+
+        cy = pos[1]
+        rz = robot_pos[2]
+        # want to find the vertical distance between cam center and robot center
+
         # distances betewen center of camera to center of robot
         # THis assumes robot is to the right of the camera
         self.dist_x = rx - cx
         self.dist_y = cz - ry 
+        self.dist_z = rz + cy
         print(f"DIST X: {self.dist_x}")
         print(f"DIST Y: {self.dist_y}")
+        print(f"DIST Z: {self.dist_z}")
     def convert(self, pos): 
         cx = pos[0]
+        cy = pos[1]
         cz = pos[2]
         rx = self.dist_x + cx
         ry = cz - self.dist_y
+        rz = self.dist_z - cy
         #print("rx, ry", rx, ry)
         theta = np.arctan(ry / rx)
         rad = math.sqrt(rx**2 + ry**2)
         #print("theta", theta)
-        return rx, ry, theta, rad
+        return rx, ry, rz, theta, rad
     def twist(self, theta): 
         self.robot.arm.set_single_joint_position("waist", theta)
     def zzz(self):
         self.robot.arm.go_to_sleep_pose()
     def home(self):
         self.robot.arm.go_to_home_pose()
-    def setpose(self, pos): 
+    def setpose(self, rad, height): 
         current = self.get_current_pos()
         current_r = math.sqrt((current[0]**2)+(current[1]**2))
         r_buff = 0.035
-        print(f"MyPos:{pos}, CurrentRad:{current_r}, AmtToMv:{pos-current_r+r_buff}")
-        self.robot.arm.set_ee_cartesian_trajectory(x=(pos - current_r + r_buff))
+        print(f"XYRad:{rad}, CurrentRad:{current_r}, AmtToMv:{rad-current_r+r_buff}")
+        self.robot.arm.set_ee_cartesian_trajectory(x=(rad - current_r + r_buff))
+        current_z = current[2]
+        z_buff = 0
+        print(f"MyZ:{height}, CurrentZ:{current_z}, AmtToMvUp:{height-current_z+z_buff}")
+        if rad !=0: 
+            self.robot.arm.set_ee_cartesian_trajectory(z=(height-current_z+z_buff))
     def close(self): 
         self.robot.gripper.grasp()
     def open(self): 
