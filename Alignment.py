@@ -253,9 +253,8 @@ class processing:
                             zs = zs[:n_consecutive]
                             print(f"ERROR: {error}")
                             if np.all(np.array(errors) < 0.01): 
-                                print("SET POSE")
+                                print("Grabbing the pen!")
                                 avg_z = np.mean(zs)
-                                print(f"AVGZ: {avg_z}")
                                 self.mover.setpose(rad,avg_z)
                                 self.mover.close()
                                 time.sleep(1)
@@ -263,6 +262,7 @@ class processing:
                                 self.mover.open()
                                 self.mover.spin_pos()
                                 errors = []
+                                zs = []
                                 last_theta = 0
                                 #exit()
                     #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
