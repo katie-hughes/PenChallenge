@@ -223,6 +223,7 @@ class processing:
                     except: 
                         pass
                 if len(areas) != 0: 
+                    print()
                     largest_index = np.argmax(areas)
                     max_centroid = centroids[largest_index]
                     print(f"estimated center: {max_centroid}")
@@ -232,7 +233,7 @@ class processing:
                     print(f"deprojected: {point}")
                     rx, ry, rz, theta, rad = self.mover.convert(point)
                     print(f"THETA: {theta}")
-                    print(f"RAD: {rad}\n") 
+                    print(f"RAD: {rad}") 
                     if self.calibration_run: 
                         coords.append(point)
                         if ct > 500: 
@@ -246,12 +247,16 @@ class processing:
                             print("Twisting")
                             self.mover.twist(theta)
                         errors = [error] + errors
+                        zs = [rz] + zs
                         if len(errors) > n_consecutive: 
                             errors = errors[:n_consecutive]
+                            zs = zs[:n_consecutive]
                             print(f"ERROR: {error}")
                             if np.all(np.array(errors) < 0.01): 
                                 print("SET POSE")
-                                self.mover.setpose(rad,0)
+                                avg_z = np.mean(zs)
+                                print(f"AVGZ: {avg_z}")
+                                self.mover.setpose(rad,avg_z)
                                 self.mover.close()
                                 time.sleep(1)
                                 self.mover.zzz()
