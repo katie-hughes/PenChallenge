@@ -102,7 +102,8 @@ class MoveIt:
         z_buff = 0.02
         print(f"MyZ:{height}, CurrentZ:{current_z}, AmtToMvUp:{height-current_z+z_buff}")
         #self.robot.arm.set_ee_cartesian_trajectory(z=(height-current_z+z_buff))
-        self.robot.arm.set_ee_cartesian_trajectory(x=(rad - current_r + r_buff), z=(height-current_z+z_buff))
+        success = self.robot.arm.set_ee_cartesian_trajectory(x=(rad - current_r + r_buff), z=(height-current_z+z_buff))
+        return success
     def close(self): 
         self.robot.gripper.grasp()
     def open(self): 

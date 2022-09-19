@@ -127,6 +127,7 @@ class processing:
             self.mover.spin_pos()
         # factor for my proportional control which I am not using atm
         self.alpha = 0.5
+        self.n_consecutive = 25
 
         
 
@@ -167,7 +168,7 @@ class processing:
             zs = []
             ct = 0
             coords = []
-            n_consecutive = 50
+            leftovers = 0
             while True: ##ct < 3:
                 ct += 1
                 # Get frameset of color and depth
@@ -229,6 +230,8 @@ class processing:
                     print(f"estimated center: {max_centroid}")
                     centroid_depth = depth_image[max_centroid[1]][max_centroid[0]]
                     print(f"depth: {centroid_depth}")
+                    if centroid_depth == 0: 
+                        continue
                     point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], self.depth_scale*centroid_depth)
                     print(f"deprojected: {point}")
                     rx, ry, rz, theta, rad = self.mover.convert(point)
@@ -241,26 +244,37 @@ class processing:
                     else: 
                         error = last_theta - theta
                         last_theta = theta 
-                        if error < 0.05: 
+                        if np.absolute(error) < 0.05: 
+                            leftovers += error
+                            # Orig i just did pass here
+                            # but i think this is an issue sometimes. 
+                        elif np.absolute(error) > 1.0: 
+                            ## sometimes it swings back and forth and I dont want it to
                             pass
                         else: 
                             print("Twisting")
                             self.mover.twist(theta)
                         errors = [error] + errors
                         zs = [rz] + zs
-                        if len(errors) > n_consecutive: 
-                            errors = errors[:n_consecutive]
-                            zs = zs[:n_consecutive]
+                        if len(errors) > self.n_consecutive: 
+                            errors = errors[:self.n_consecutive]
+                            zs = zs[:self.n_consecutive]
                             print(f"ERROR: {error}")
                             if np.all(np.array(errors) < 0.01): 
                                 print("Grabbing the pen!")
+                                print(f"LEFTOVERS: {leftovers}")
+                                if np.absolute(leftovers) > 0.1: 
+                                    print("TWISTING AGAIN")
+                                    self.mover.twist(leftovers)
+                                leftovers = 0
                                 avg_z = np.mean(zs)
-                                self.mover.setpose(rad,avg_z)
-                                self.mover.close()
-                                time.sleep(1)
-                                self.mover.zzz()
-                                self.mover.open()
-                                self.mover.spin_pos()
+                                success = self.mover.setpose(rad,avg_z)
+                                if success: 
+                                    self.mover.close()
+                                    time.sleep(1)
+                                    self.mover.zzz()
+                                    self.mover.open()
+                                    self.mover.spin_pos()
                                 errors = []
                                 zs = []
                                 last_theta = 0
@@ -286,7 +300,7 @@ class processing:
             if self.calibration_run: 
                 coords = np.array(coords)
                 mean = np.mean(coords, axis=0)
-                print(f"USE ME FOR CALIBRATION: {list(mean)}\n\n")
+                print(f"TO USE FOR CALIBRATION: {list(mean)}\n\n")
                 f = open('cal.txt', "w")
                 for c in mean: 
                     f.write(str(c)+'\n')
