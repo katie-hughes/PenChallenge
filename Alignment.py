@@ -11,7 +11,7 @@ import time
 
 
 class processing: 
-    def __init__(self): 
+    def __init__(self, cal=False): 
         # Create a pipeline
         self.pipeline = rs.pipeline()
 
@@ -71,18 +71,21 @@ class processing:
         my_purple_hsv = cv2.cvtColor(np.uint8([[purple_rgb]]), cv2.COLOR_RGB2HSV)
         print("PURPLE HSV: ", my_purple_hsv)
         """
-        my_purple_hsv = np.uint8([[[158, 158, 120]]])
+        my_purple_hsv = np.uint8([[[158, 176, 150]]]) #np.uint8([[[158, 158, 120]]])
         purple_hue = my_purple_hsv[0][0][0]
         purple_sat = my_purple_hsv[0][0][1]
         purple_val = my_purple_hsv[0][0][2]
         print("PURPLE HUE", purple_hue)
         self.purple = my_purple_hsv
-        self.hue_buff = 40
-        self.sat_buff = 75
-        self.val_buff = 70
+        self.hue_buff = 18
+        self.sat_buff = 79
+        self.val_buff = 105
         self.purple_low = np.array([purple_hue-self.hue_buff, purple_sat-self.sat_buff, purple_val-self.val_buff])
         self.purple_high = np.array([purple_hue+self.hue_buff, purple_sat+self.sat_buff, purple_val+self.val_buff])
         self.mask = None
+
+        ## 118 to 153; 97 to 255, 45 to 255
+        ## 135 +- 18 ; 176 +- 79, 150 +- 105
 
         self.title = 'Align Example'
 
@@ -102,19 +105,23 @@ class processing:
         self.mover = MoveIt()
         # calibrate where the arm is (this is deprojected coords of pen held in home)
         # calculated for you if you choose to do a calibration run (below)!
-        start = [0.07387535311960851, -0.027243375605950453, 0.3116533614560863]
+        start = [0.134129620776205, -0.023032093199412386, 0.3023992121933463]
         self.mover.home()
         self.mover.open()
+        time.sleep(1)
         self.mover.calibrate(start)
+        time.sleep(1)
         # sleep 
         self.calibration_run = False
+        if cal: 
+            self.calibration_run = True
         if self.calibration_run: 
             print("Calibration run!")
             print("Prepare for grippers closing")
             time.sleep(3)
             self.mover.close()
-        
-        self.mover.spin_pos()
+        else:     
+            self.mover.spin_pos()
         # factor for my proportional control 
         self.alpha = 0.5
 
@@ -215,7 +222,6 @@ class processing:
                     largest_index = np.argmax(areas)
                     max_centroid = centroids[largest_index]
                     print(f"estimated center: {max_centroid}")
-                    print(depth_image.shape)
                     centroid_depth = depth_image[max_centroid[1]][max_centroid[0]]
                     print(f"depth: {centroid_depth}")
                     point = rs.rs2_deproject_pixel_to_point(self.intr, [max_centroid[0], max_centroid[1]], self.depth_scale*centroid_depth)
@@ -233,6 +239,7 @@ class processing:
                         if error < 0.05: 
                             pass
                         else: 
+                            print("Twisting")
                             self.mover.twist(theta)
                         errors = [error] + errors
                         if len(errors) > n_consecutive: 
@@ -276,5 +283,16 @@ class processing:
             self.pipeline.stop()
 
 
-a = processing()
+
+parser = argparse.ArgumentParser(description='Grab the pen')
+parser.add_argument('-c', '--calibration', action='store_true', help='Do a calibration run')
+
+
+args = parser.parse_args()
+
+if args.calibration: 
+    a = processing(cal=True)
+else: 
+    a = processing()
+
 a.go()

@@ -66,10 +66,6 @@ class MoveIt:
         self.dist_y = cz - ry 
         print(f"DIST X: {self.dist_x}")
         print(f"DIST Y: {self.dist_y}")
-        ## now when I get a distance in the camera frame
-        ## how to convert it to robot frame? 
-        ## basically I want something to add to the x and y coordinates
-        ## to convert it.
     def convert(self, pos): 
         cx = pos[0]
         cz = pos[2]
@@ -78,7 +74,7 @@ class MoveIt:
         #print("rx, ry", rx, ry)
         theta = np.arctan(ry / rx)
         rad = math.sqrt(rx**2 + ry**2)
-        print("theta", theta)
+        #print("theta", theta)
         return rx, ry, theta, rad
     def twist(self, theta): 
         self.robot.arm.set_single_joint_position("waist", theta)
@@ -89,8 +85,9 @@ class MoveIt:
     def setpose(self, pos): 
         current = self.get_current_pos()
         current_r = math.sqrt((current[0]**2)+(current[1]**2))
-        print(pos, current_r, pos-current_r)
-        self.robot.arm.set_ee_cartesian_trajectory(x=(pos - current_r + 0.02))
+        r_buff = 0.035
+        print(f"MyPos:{pos}, CurrentRad:{current_r}, AmtToMv:{pos-current_r+r_buff}")
+        self.robot.arm.set_ee_cartesian_trajectory(x=(pos - current_r + r_buff))
     def close(self): 
         self.robot.gripper.grasp()
     def open(self): 
