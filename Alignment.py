@@ -65,13 +65,6 @@ class processing:
         align_to = rs.stream.color
         self.align = rs.align(align_to)
 
-        """
-        purple_rgb = [23.1, 22.0, 58,4]
-        print('PURPLE RGB:', purple_rgb)
-        my_purple_hsv = cv2.cvtColor(np.uint8([[purple_rgb]]), cv2.COLOR_RGB2HSV)
-        print("PURPLE HSV: ", my_purple_hsv)
-        """
-        
         self.purple_lo = np.uint8([[[124, 0, 0]]])
         self.purple_hi = np.uint8([[[180, 255, 255]]])
 
@@ -87,7 +80,6 @@ class processing:
         cv2.createTrackbar('SatHi', self.title , self.purple_hi[0][0][1], 255, self.sat_hi_trackbar)
         cv2.createTrackbar('ValLo', self.title , self.purple_lo[0][0][2], 255, self.val_lo_trackbar)
         cv2.createTrackbar('ValHi', self.title , self.purple_hi[0][0][2], 255, self.val_hi_trackbar)
-
 
         # set up mover class
         print("Importing the mover class")
