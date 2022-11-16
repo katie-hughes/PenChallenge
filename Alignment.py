@@ -71,34 +71,23 @@ class processing:
         my_purple_hsv = cv2.cvtColor(np.uint8([[purple_rgb]]), cv2.COLOR_RGB2HSV)
         print("PURPLE HSV: ", my_purple_hsv)
         """
-        my_purple_hsv = np.uint8([[[158, 176, 150]]]) #np.uint8([[[158, 158, 120]]])
-        purple_hue = my_purple_hsv[0][0][0]
-        purple_sat = my_purple_hsv[0][0][1]
-        purple_val = my_purple_hsv[0][0][2]
-        print("PURPLE HUE", purple_hue)
-        self.purple = my_purple_hsv
-        self.hue_buff = 18
-        self.sat_buff = 79
-        self.val_buff = 105
-        self.purple_low = np.array([purple_hue-self.hue_buff, purple_sat-self.sat_buff, purple_val-self.val_buff])
-        self.purple_high = np.array([purple_hue+self.hue_buff, purple_sat+self.sat_buff, purple_val+self.val_buff])
-        self.mask = None
+        
+        self.purple_lo = np.uint8([[[124, 0, 0]]])
+        self.purple_hi = np.uint8([[[180, 255, 255]]])
 
-        ## 118 to 153; 97 to 255, 45 to 255
-        ## 135 +- 18 ; 176 +- 79, 150 +- 105
+        self.mask = None
 
         self.title = 'Align Example'
 
         cv2.namedWindow(self.title, cv2.WINDOW_NORMAL)
-        #"""
-        cv2.createTrackbar('Hue', self.title , purple_hue, 180, self.hue_trackbar)
-        cv2.createTrackbar('HueBuff', self.title , self.hue_buff, 180, self.hue_buff_trackbar)
-        cv2.createTrackbar('Sat', self.title , purple_sat, 180, self.sat_trackbar)
-        cv2.createTrackbar('SatBuff', self.title , self.sat_buff, 180, self.sat_buff_trackbar)
-        cv2.createTrackbar('Val', self.title , purple_val, 255, self.val_trackbar)
-        cv2.createTrackbar('ValBuff', self.title , self.val_buff, 255, self.val_buff_trackbar)
-        #"""
-        
+
+        cv2.createTrackbar('HueLo', self.title , self.purple_lo[0][0][0], 180, self.hue_lo_trackbar)
+        cv2.createTrackbar('HueHi', self.title , self.purple_hi[0][0][0], 180, self.hue_hi_trackbar)
+        cv2.createTrackbar('SatLo', self.title , self.purple_lo[0][0][1], 255, self.sat_lo_trackbar)
+        cv2.createTrackbar('SatHi', self.title , self.purple_hi[0][0][1], 255, self.sat_hi_trackbar)
+        cv2.createTrackbar('ValLo', self.title , self.purple_lo[0][0][2], 255, self.val_lo_trackbar)
+        cv2.createTrackbar('ValHi', self.title , self.purple_hi[0][0][2], 255, self.val_hi_trackbar)
+
 
         # set up mover class
         print("Importing the mover class")
@@ -106,6 +95,7 @@ class processing:
         self.mover.home()
         self.mover.open()
         self.calibration_run = False
+        self.calibration_pts = 500
         if cal: 
             self.calibration_run = True
         if self.calibration_run: 
@@ -129,37 +119,24 @@ class processing:
         self.alpha = 0.5
         self.n_consecutive = 25
 
-        
+    def hue_lo_trackbar(self,val): 
+        self.purple_lo[0][0][0] = val
 
+    def hue_hi_trackbar(self,val): 
+        self.purple_hi[0][0][0] = val
 
-    def hue_trackbar(self,val): 
-        self.purple[0][0][0] = val
-        self.update_purples()
+    def sat_lo_trackbar(self,val): 
+        self.purple_lo[0][0][1] = val
 
-    def hue_buff_trackbar(self,val): 
-        self.hue_buff = val
-        self.update_purples()
+    def sat_hi_trackbar(self,val): 
+        self.purple_hi[0][0][1] = val
 
-    def sat_trackbar(self,val): 
-        self.purple[0][0][1] = val
-        self.update_purples()
+    def val_lo_trackbar(self,val): 
+        self.purple_lo[0][0][2] = val
 
-    def sat_buff_trackbar(self,val): 
-        self.sat_buff = val
-        self.update_purples()
-
-    def val_trackbar(self,val): 
-        self.purple[0][0][2] = val
-        self.update_purples()
-
-    def val_buff_trackbar(self,val): 
-        self.val_buff = val
-        self.update_purples()
+    def val_hi_trackbar(self,val): 
+        self.purple_hi[0][0][2] = val
     
-    def update_purples(self): 
-        self.purple_low = np.array([self.purple[0][0][0]-self.hue_buff, self.purple[0][0][1]-self.sat_buff, self.purple[0][0][2]-self.val_buff])
-        self.purple_high = np.array([self.purple[0][0][0]+self.hue_buff, self.purple[0][0][1]+self.sat_buff, self.purple[0][0][2]+self.val_buff])
-
     def go(self): 
         # Streaming loop
         try:
@@ -203,10 +180,9 @@ class processing:
 
 
 
-                purple_mask = cv2.inRange(hsv_bg, self.purple_low, self.purple_high)
+                purple_mask = cv2.inRange(hsv_bg, self.purple_lo, self.purple_hi)
                 #print('Is there purple:', np.any(purple_mask))
                 masked_background = cv2.bitwise_and(hsv_bg, hsv_bg, mask=purple_mask)
-
 
                 contours, hierarchy = cv2.findContours(purple_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
                 drawn_contours = cv2.drawContours(color_image, contours, -1, (0,255,0), 3)
@@ -239,7 +215,7 @@ class processing:
                     print(f"RAD: {rad}") 
                     if self.calibration_run: 
                         coords.append(point)
-                        if ct > 500: 
+                        if ct > self.calibration_pts: 
                             break
                     else: 
                         error = last_theta - theta
@@ -278,8 +254,6 @@ class processing:
                                 errors = []
                                 zs = []
                                 last_theta = 0
-                                #exit()
-                    #drawn_contours = cv2.drawContours(bg_removed, contours, largest_index, (0,255,0), 3)
                     drawn_contours = cv2.circle(drawn_contours, max_centroid, 5, [0,0,255], 5)
                 
 
